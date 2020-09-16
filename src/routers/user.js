@@ -16,6 +16,20 @@ router.post('/users', async (req, res) => {
 	}
 })
 
+//
+router.post('/users/login', async (req, res) => {
+	try {
+		const user = await User.findByCredentials(
+			req.body.email,
+			req.body.password
+		)
+
+		res.send(user)
+	} catch (err) {
+		res.status(400).send()
+	}
+})
+
 // GET all users
 router.get('/users', async (req, res) => {
 	try {
@@ -56,15 +70,17 @@ router.patch('/users/:id', async (req, res) => {
 				error: 'Invalid updates.',
 			})
 
+		// findByIdAndUpdate is no longer usable since we need a middleware to
+		// run before the user is saved (password hashing) and this method bypasses it
 		const _id = req.params.id
-
-		const user = await User.findByIdAndUpdate(_id, req.body, {
-			new: true,
-			runValidators: true,
-		})
-
+		const user = await User.findById(_id)
 		if (!user) return res.status(404).send()
 
+		//const updates = Object.keys(req.body)
+		//updates.map((update) => (user[update] = req.body[update]))
+		Object.assign(user, req.body)
+
+		await user.save()
 		res.send(user)
 	} catch (err) {
 		res.status(500).send()
