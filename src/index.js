@@ -9,10 +9,12 @@ const taskRouter = require('./routers/task')
 
 const app = express()
 const PORT = process.env.PORT || 3000
+
+// logger middleware
 app.use(morgan('dev'))
 
 app.use(express.json())
-// register routes
+
 app.use(userRouter)
 app.use(taskRouter)
 

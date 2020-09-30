@@ -91,7 +91,6 @@ router.patch('/users/me', auth, async (req, res) => {
 		res.send(req.user)
 	} catch (err) {
 		res.status(500).send()
-		log(err)
 	}
 })
 

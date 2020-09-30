@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const Task = require('./task')
 const { isEmail, contains } = require('validator')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
@@ -50,6 +51,12 @@ const userSchema = new mongoose.Schema({
 	],
 })
 
+userSchema.virtual('tasks', {
+	ref: 'Task',
+	localField: '_id',
+	foreignField: 'owner',
+})
+
 // methods can be used as fns available through model instances, that is, after
 // new User() is evoked and done
 userSchema.methods.generateAuthToken = async function () {
@@ -92,11 +99,21 @@ userSchema.statics.findByCredentials = async (email, password) => {
 }
 
 // pre is a middleware function that will run before the doc is saved
+// this one hashes the password before saving user doc to db
 userSchema.pre('save', async function (next) {
 	const user = this
 
 	if (user.isModified('password'))
 		user.password = await bcrypt.hash(user.password, 8)
+
+	next()
+})
+
+// delete user tasks when a user deletes their account
+userSchema.pre('remove', async function (next) {
+	const user = this
+
+	await Task.deleteMany({ owner: user._id })
 
 	next()
 })
