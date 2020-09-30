@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const { isEmail, contains } = require('validator')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 
 const userSchema = new mongoose.Schema({
 	name: {
@@ -38,8 +39,44 @@ const userSchema = new mongoose.Schema({
 			if (num < 0) throw new Error("Age can't be less than 0.")
 		},
 	},
+
+	tokens: [
+		{
+			token: {
+				type: String,
+				required: true,
+			},
+		},
+	],
 })
 
+// methods can be used as fns available through model instances, that is, after
+// new User() is evoked and done
+userSchema.methods.generateAuthToken = async function () {
+	const user = this
+
+	const token = jwt.sign(
+		{ _id: user._id.toString() },
+		'parangaricotirimirruaro'
+	)
+
+	user.tokens = [...user.tokens, { token }]
+	await user.save()
+
+	return token
+}
+
+userSchema.methods.toJSON = function () {
+	const user = this
+	const userProfile = user.toObject()
+
+	delete userProfile.password
+	delete userProfile.tokens
+
+	return userProfile
+}
+
+// statics can be used as functions available through the models
 userSchema.statics.findByCredentials = async (email, password) => {
 	try {
 		const user = await User.findOne({ email })
@@ -50,7 +87,7 @@ userSchema.statics.findByCredentials = async (email, password) => {
 
 		return user
 	} catch (err) {
-		console.log(err)
+		console.log({ err })
 	}
 }
 

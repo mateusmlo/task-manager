@@ -1,22 +1,25 @@
 const { Router } = require('express')
 const User = require('../models/user')
 const checkValidOps = require('../utils/checkOperations')
+const auth = require('../middleware/auth')
 
 const router = new Router()
 
-// create post
+// CREATE new user
 router.post('/users', async (req, res) => {
 	try {
 		const newUser = new User(req.body)
-		const saveUser = await newUser.save()
 
-		res.status(201).send(saveUser)
+		const saveUser = await newUser.save()
+		const token = await newUser.generateAuthToken()
+
+		res.status(201).send({ saveUser, token })
 	} catch (err) {
-		res.status(500).send()
+		res.status(500).send({ error: 'Unable to create user.' })
 	}
 })
 
-//
+// LOGIN user
 router.post('/users/login', async (req, res) => {
 	try {
 		const user = await User.findByCredentials(
@@ -24,39 +27,51 @@ router.post('/users/login', async (req, res) => {
 			req.body.password
 		)
 
-		res.send(user)
+		const token = await user.generateAuthToken()
+
+		res.send({
+			user,
+			token,
+		})
 	} catch (err) {
-		res.status(400).send()
+		res.status(400).send({ err })
 	}
 })
 
-// GET all users
-router.get('/users', async (req, res) => {
+// LOGOUT user
+router.post('/users/logout', auth, async (req, res) => {
 	try {
-		const allUsers = await User.find({})
-		res.send(allUsers)
+		req.user.tokens = req.user.tokens.filter(
+			(userToken) => userToken.token !== req.token
+		)
+
+		await req.user.save()
+
+		res.send({ info: 'User logged out.' })
 	} catch (err) {
-		res.status(500).send()
+		res.status(500).send(err)
 	}
 })
 
-// GET single user by _id
-router.get('/users/:id', async (req, res) => {
+// LOGOUT of all sessions - wipe tokens
+router.post('/users/logoutAll', auth, async (req, res) => {
 	try {
-		const _id = req.params.id
+		req.user.tokens = []
+		await req.user.save()
 
-		const user = await User.findById(_id)
-		if (!user) return res.status(404).send()
-
-		res.send(user)
+		res.send({ info: 'Logged out of all sessions.' })
 	} catch (err) {
-		res.status(500).send()
-		log(err)
+		res.status(500).send(err)
 	}
+})
+
+// GET current loged-in user
+router.get('/users/me', auth, async (req, res) => {
+	res.send(req.user)
 })
 
 // UPDATE/PATCH user
-router.patch('/users/:id', async (req, res) => {
+router.patch('/users/me', auth, async (req, res) => {
 	const isValidOp = checkValidOps(req.body, [
 		'name',
 		'email',
@@ -64,24 +79,16 @@ router.patch('/users/:id', async (req, res) => {
 		'age',
 	])
 
+	if (!isValidOp)
+		return res.status(400).send({
+			error: 'Invalid updates.',
+		})
+
 	try {
-		if (!isValidOp)
-			return res.status(400).send({
-				error: 'Invalid updates.',
-			})
+		Object.assign(req.user, req.body)
 
-		// findByIdAndUpdate is no longer usable since we need a middleware to
-		// run before the user is saved (password hashing) and this method bypasses it
-		const _id = req.params.id
-		const user = await User.findById(_id)
-		if (!user) return res.status(404).send()
-
-		//const updates = Object.keys(req.body)
-		//updates.map((update) => (user[update] = req.body[update]))
-		Object.assign(user, req.body)
-
-		await user.save()
-		res.send(user)
+		await req.user.save()
+		res.send(req.user)
 	} catch (err) {
 		res.status(500).send()
 		log(err)
@@ -89,14 +96,11 @@ router.patch('/users/:id', async (req, res) => {
 })
 
 // DELETE user by _id
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/me', auth, async (req, res) => {
 	try {
-		const _id = req.params.id
-		const user = await User.findByIdAndDelete(_id)
+		await req.user.remove()
 
-		if (!user) return res.status(404).send()
-
-		res.send(user)
+		res.send(req.user)
 	} catch (err) {
 		res.status(500).send()
 	}
