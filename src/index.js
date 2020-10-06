@@ -1,5 +1,5 @@
 const express = require('express')
-const morgan = require('morgan')
+//const morgan = require('morgan')
 require('./db/mongoose')
 const log = console.log
 
@@ -11,7 +11,7 @@ const app = express()
 const PORT = process.env.PORT
 
 // logger middleware
-app.use(morgan('dev'))
+//app.use(morgan('dev'))
 
 app.use(express.json())
 
