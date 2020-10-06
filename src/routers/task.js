@@ -21,11 +21,41 @@ router.post('/tasks', auth, async (req, res) => {
 	}
 })
 
-// GET all (user) tasks
+// GET all (user) tasks matching query
 router.get('/tasks', auth, async (req, res) => {
+	const match = {}
+	const sort = {}
+
+	// this is a typecast, since the query will return us a string and not a
+	// boolean, we just check the value and get a real boolean from it
+	if (req.query.completed) {
+		match.completed = req.query.completed === 'true'
+	}
+
+	if (req.query.sortBy) {
+		// the sortBy query has three variations and is divided in two.
+		// createdAt || updatedAt || completed, followed by :asc || :desc, which
+		// represents the order they're going to be displayed. -1 is for
+		// descending, 1 is for ascending. We split and convert this value to an
+		// int
+		const queryParts = req.query.sortBy.split(':')
+		sort[queryParts[0]] = queryParts[1] === 'desc' ? -1 : 1
+	}
+
 	try {
-		const allTasks = await Task.find({ owner: req.user._id })
-		res.send(allTasks)
+		await req.user
+			.populate({
+				path: 'tasks',
+				match,
+				options: {
+					limit: parseInt(req.query.limit),
+					skip: parseInt(req.query.skip),
+					sort,
+				},
+			})
+			.execPopulate()
+
+		res.send(req.user.tasks)
 	} catch (err) {
 		res.status(500).send()
 	}

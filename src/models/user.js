@@ -4,52 +4,63 @@ const { isEmail, contains } = require('validator')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
-const userSchema = new mongoose.Schema({
-	name: {
-		type: String,
-		required: true,
-		trim: true,
-	},
-
-	email: {
-		type: String,
-		required: true,
-		trim: true,
-		lowercase: true,
-		unique: true,
-		validate(val) {
-			if (!isEmail(val)) throw new Error('Email is invalid.')
+const userSchema = new mongoose.Schema(
+	{
+		name: {
+			type: String,
+			required: true,
+			trim: true,
 		},
-	},
 
-	password: {
-		type: String,
-		required: true,
-		trim: true,
-		minlength: [7, 'Password must have more than six characters.'],
-		validate(val) {
-			if (contains(val, 'password', { ignoreCase: true }))
-				throw new Error("Password cannot contain the word 'password'")
-		},
-	},
-
-	age: {
-		type: Number,
-		default: 0,
-		validate(num) {
-			if (num < 0) throw new Error("Age can't be less than 0.")
-		},
-	},
-
-	tokens: [
-		{
-			token: {
-				type: String,
-				required: true,
+		email: {
+			type: String,
+			required: true,
+			trim: true,
+			lowercase: true,
+			unique: true,
+			validate(val) {
+				if (!isEmail(val)) throw new Error('Email is invalid.')
 			},
 		},
-	],
-})
+
+		password: {
+			type: String,
+			required: true,
+			trim: true,
+			minlength: [7, 'Password must have more than six characters.'],
+			validate(val) {
+				if (contains(val, 'password', { ignoreCase: true }))
+					throw new Error(
+						"Password cannot contain the word 'password'"
+					)
+			},
+		},
+
+		age: {
+			type: Number,
+			default: 0,
+			validate(num) {
+				if (num < 0) throw new Error("Age can't be less than 0.")
+			},
+		},
+
+		tokens: [
+			{
+				token: {
+					type: String,
+					required: true,
+				},
+			},
+		],
+
+		avatar: {
+			type: Buffer,
+		},
+	},
+	{
+		timestamps: true,
+	}
+)
 
 userSchema.virtual('tasks', {
 	ref: 'Task',
@@ -79,6 +90,7 @@ userSchema.methods.toJSON = function () {
 
 	delete userProfile.password
 	delete userProfile.tokens
+	delete userProfile.avatar
 
 	return userProfile
 }
