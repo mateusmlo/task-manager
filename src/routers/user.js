@@ -4,6 +4,7 @@ const sharp = require('sharp')
 const User = require('../models/user')
 const checkValidOps = require('../utils/checkOperations')
 const auth = require('../middleware/auth')
+const { sendWelcomeEmail, sendGoodbyeEmail } = require('../emails/account')
 
 const router = new Router()
 
@@ -11,11 +12,13 @@ const router = new Router()
 router.post('/users', async (req, res) => {
 	try {
 		const newUser = new User(req.body)
+		const savedUser = await newUser.save()
 
-		const saveUser = await newUser.save()
+		sendWelcomeEmail(savedUser.email, savedUser.name)
+
 		const token = await newUser.generateAuthToken()
 
-		res.status(201).send({ saveUser, token })
+		res.status(201).send({ savedUser, token })
 	} catch (err) {
 		res.status(500).send({ error: 'Unable to create user.' })
 	}
@@ -100,6 +103,7 @@ router.patch('/users/me', auth, async (req, res) => {
 router.delete('/users/me', auth, async (req, res) => {
 	try {
 		await req.user.remove()
+		sendGoodbyeEmail(req.user.email, req.user.name)
 
 		res.send(req.user)
 	} catch (err) {
