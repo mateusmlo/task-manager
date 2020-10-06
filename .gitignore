@@ -117,3 +117,6 @@ dist
 
 # API testing dir
 playground/
+
+# Config files folder
+config/
