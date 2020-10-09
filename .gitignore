@@ -120,3 +120,7 @@ playground/
 
 # Config files folder
 config/
+
+# test files just for reference, not related to project
+src/math.js
+tests/math.test.js

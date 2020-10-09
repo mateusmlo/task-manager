@@ -18,7 +18,7 @@ router.post('/users', async (req, res) => {
 
 		const token = await newUser.generateAuthToken()
 
-		res.status(201).send({ savedUser, token })
+		res.status(201).send({ user: savedUser, token })
 	} catch (err) {
 		res.status(500).send({ error: 'Unable to create user.' })
 	}

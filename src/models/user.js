@@ -103,7 +103,7 @@ userSchema.statics.findByCredentials = async (email, password) => {
 
 		return user
 	} catch (err) {
-		console.log({ err })
+		console.log(`A problem occurred while loging in.`)
 	}
 }
 

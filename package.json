@@ -5,7 +5,11 @@
 	"license": "MIT",
 	"scripts": {
 		"start": "node src/index.js",
-		"dev": "env-cmd -f ./config/dev.env nodemon src/index.js"
+		"dev": "env-cmd -f ./config/dev.env nodemon src/index.js",
+		"test": "env-cmd -f ./config/test.env jest --watch --detectOpenHandles"
+	},
+	"jest": {
+		"testEnvironment": "node"
 	},
 	"dependencies": {
 		"@sendgrid/mail": "^7.2.6",
@@ -21,7 +25,9 @@
 	"devDependencies": {
 		"env-cmd": "^10.1.0",
 		"eslint": "^7.10.0",
+		"jest": "^26.5.2",
 		"morgan": "^1.10.0",
-		"nodemon": "^2.0.4"
+		"nodemon": "^2.0.4",
+		"supertest": "^5.0.0"
 	}
 }
